@@ -22,7 +22,7 @@ function solve(lines) {
     lines.forEach(line => {
         const matchGame = line[0].match(/^Game (\d+):/);
         if (matchGame) {
-            const gameNumber = parseInt(matchGame[1])
+            const gameNumber = parseInt(matchGame[1]); // Parse the game number as an integer
             const game = {
                 game: gameNumber,
                 colors: {}
@@ -41,22 +41,16 @@ function solve(lines) {
 
             games.push(game);
         }
+    })
+
+    let sum = 0;
+
+    games.forEach(game => {
+        sum += game.colors.red * game.colors.blue * game.colors.green
     });
 
-    const correctGames = games.filter(game => {
-        return game.colors.red <= red &&
-               game.colors.green <= green &&
-               game.colors.blue <= blue;
-    });
-
-    let IdSums = 0;
-
-    correctGames.forEach(game => {
-        IdSums += game.game
-    });
-
-    return IdSums
-
+    
+    return sum
 }
 
 
