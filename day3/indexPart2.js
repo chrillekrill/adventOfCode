@@ -95,6 +95,8 @@ function solve(grid) {
 }
 
 function getConnectedNumber(connectedNumbers, adjacentCharPos) {
+    const result = []
+    const symbolsConnectedToNumbers = new Set();
 
     connectedNumbers.forEach(numInfo => {
         const { start, end, number } = numInfo;
@@ -102,19 +104,40 @@ function getConnectedNumber(connectedNumbers, adjacentCharPos) {
         let id = `${start}-${end}-${number}`;
 
         adjacentCharPos.forEach(symbolPosInfo => {
-            const { pos: symbolPos } = symbolPosInfo;
-            console
+            const { pos: symbolPos, symbol } = symbolPosInfo;
             if (
                 isPositionAdjacent(symbolPos, start) ||
                 isPositionAdjacent(symbolPos, end)
             ) {
-                if(!visited.has(id)) {
-                    finalResult.add({id, number})
-                    visited.add(id)
+                if (!visited.has(id)) {
+                    finalResult.add({ id, number });
+                    visited.add(id);
+                    
+                    if (symbol === '*') {
+                        symbolsConnectedToNumbers.add(symbolPos.join(','));
+                    }
                 }
             }
         });
     });
+
+    //return [...symbolsConnectedToNumbers]
+
+    symbolsConnectedToNumbers.forEach(symbolPos => {
+        const [row, col] = symbolPos.split(',').map(Number);
+
+        const connectedNums = connectedNumbers.filter(numInfo => {
+            const { start, end } = numInfo;
+            return isPositionAdjacent([row, col], start) || isPositionAdjacent([row, col], end);
+        });
+
+        if(connectedNums.length > 1) {
+
+                result.push(connectedNums)
+
+        }
+    });
+    return result
 }
 
 function isPositionAdjacent(pos1, pos2) {
@@ -131,16 +154,17 @@ rl.on('close', () => {
 
     const result = solve(grid)
 
-    getConnectedNumber(result.numbers, result.symbols)
+    let numbers = getConnectedNumber(result.numbers, result.symbols)
 
-    const outputArray = [...finalResult].map(i => i.number)
+    const multiplyArray = (arr) => arr.reduce((acc, obj) => acc * parseInt(obj.number), 1);
 
     let sum = 0
 
-    outputArray.forEach(num => {
-        sum += parseInt(num)
-    });
+    for(const arr of numbers) {
+        const res = multiplyArray(arr)
+
+        sum += res
+    }
 
     console.log(sum)
-
 });
