@@ -27,7 +27,6 @@ function loopThrough(text) {
 
     let textSplit = text.split('');
     let number = '';
-    let returnText = text;
 
     let t = ''
 
@@ -40,7 +39,6 @@ function loopThrough(text) {
             if (number.includes(value)) {
                 const objectKey = Object.keys(numbersInText).find(k => numbersInText[k] === value);
                 t += objectKey
-                returnText = returnText.replace(new RegExp(numbersInText[objectKey], 'g'), objectKey);
                 number = '' + number.slice(-1)
             }
         }
