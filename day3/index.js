@@ -7,111 +7,144 @@ const rl = readline.createInterface({
 
 let lines = []
 
+
 rl.on('line', (line) => {
     lines.push(line)
 })
 
 
+const directions = {
+    'U': [-1, 0],
+    'UL': [-1, -1],
+    'UR': [-1, 1],
+    'D': [1, 0],
+    'DL': [1, -1],
+    'DR': [1, 1],
+    'L': [0, -1],
+    'R': [0, 1],
+}
+
+let visited = new Set()
+let finalResult = new Set()
+
 function solve(grid) {
-    let connectedNumbers = [];
+    const connectedNumbers = [];
+    const theRest = []
+    const visitedPositions = new Set();
 
-    const dfs = (row, column, currentSequence, connectedSymbol) => {
-        if (
-            row < 0 ||
-            row >= grid.length ||
-            column < 0 ||
-            column >= grid[row].length ||
-            grid[row][column] === '.'
-        ) {
-            return;
+    let num = '';
+
+    for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid[i].length; j++) {
+            const currentChar = grid[i][j];
+
+            if (!isNaN(currentChar)) {
+                num += currentChar;
+            } else if (num !== '') {
+                console.log(num)
+                const startCol = Math.max(j - num.length, 0); // Ensure startCol is non-negative
+                const startStr = `${i}-${startCol}`;
+                
+                if (!visitedPositions.has(startStr)) {
+                    connectedNumbers.push({ number: num, end: [i, j - 1], start: [i, startCol] });
+                    num = '';
+                    for (let k = startCol; k <= j - 1; k++) {
+                        visitedPositions.add(`${i}-${k}`);
+                    }
+                }
+            }
+
+            if (!isNaN(currentChar) || currentChar === '.') {
+                for (const direction in directions) {
+                    const [rowChange, colChange] = directions[direction];
+                    const newRow = i + rowChange;
+                    const newCol = j + colChange;
+
+                    if (
+                        newRow >= 0 &&
+                        newRow < grid.length &&
+                        newCol >= 0 &&
+                        newCol < grid[i].length
+                    ) {
+                        const adjacentChar = grid[newRow][newCol];
+
+                        if (
+                            isNaN(adjacentChar) &&
+                            adjacentChar !== '.' &&
+                            currentChar !== '.'
+                        ) {
+                            theRest.push({pos: [newRow, newCol], adjecent: [i, j], symbol: adjacentChar, number: currentChar})
+                        }
+                    }
+                }
+            }
         }
+        if (num !== '') {
+            const startCol = Math.max(grid[i].length - num.length, 0);
+            const startStr = `${i}-${startCol}`;
 
-        const currentChar = grid[row][column];
-        grid[row][column] = '.';
-
-        if (!isNaN(currentChar) && currentChar !== connectedSymbol) {
-            connectedSymbol = currentChar;
-            currentSequence.push(currentChar);
-        } else if (currentChar !== '.') {
-            connectedSymbol = currentChar;
-            currentSequence.push(currentChar);
-        }
-
-        const neighbors = [
-            { row: row - 1, column: column - 1 },
-            { row: row - 1, column: column },
-            { row: row - 1, column: column + 1 },
-            { row: row, column: column - 1 },
-            { row: row, column: column + 1 },
-            { row: row + 1, column: column - 1 },
-            { row: row + 1, column: column },
-            { row: row + 1, column: column + 1 }
-        ];
-
-        for (const neighbor of neighbors) {
-            dfs(neighbor.row, neighbor.column, currentSequence, connectedSymbol);
-        }
-    };
-
-    for (let rowIndex = 0; rowIndex < grid.length; rowIndex++) {
-        for (let columnIndex = 0; columnIndex < grid[rowIndex].length; columnIndex++) {
-            const currentChar = grid[rowIndex][columnIndex];
-
-            if (!isNaN(currentChar) || currentChar !== '.') {
-                const currentSequence = [];
-                let connectedSymbol = '';
-
-                dfs(rowIndex, columnIndex, currentSequence, connectedSymbol);
-
-                if (currentSequence.length > 0) {
-
-                    connectedNumbers.push({
-                        sequence: currentSequence.join(''),
-                        symbol: connectedSymbol
-                    });
+            if (!visitedPositions.has(startStr)) {
+                connectedNumbers.push({ number: num, end: [i, grid[i].length - 1], start: [i, startCol] });
+                num = '';
+                for (let k = startCol; k <= grid[i].length - 1; k++) {
+                    visitedPositions.add(`${i}-${k}`);
                 }
             }
         }
     }
-
-    const result = []
-    connectedNumbers.forEach(element => {
-        if(!/^\d+$/.test(element.sequence)){
-            result.push(element.sequence)
-        }
-    });
-    return result
+    console.log(connectedNumbers)
+    return {numbers: connectedNumbers, symbols: theRest}
 }
 
+function getConnectedNumber(connectedNumbers, adjacentCharPos) {
 
+    connectedNumbers.forEach(numInfo => {
+        const { start, end, number } = numInfo;
 
-function extractNumbersFromString(inputStrings) {
-    console.log(inputStrings)
-    const regex = /\d+/g;
+        let id = `${start}-${end}-${number}`;
 
-    const numbersArray = []
+        adjacentCharPos.forEach(symbolPosInfo => {
+            const { pos: symbolPos } = symbolPosInfo;
 
-    inputStrings.forEach(input => {
-        input.match(regex).forEach(match => {
-            numbersArray.push(match)
+            if (
+                isPositionAdjacent(symbolPos, start) ||
+                isPositionAdjacent(symbolPos, end)
+            ) {
+                if(!visited.has(id)) {
+                    finalResult.add({id, number})
+                    visited.add(id)
+                }
+            }
         });
     });
-    
-    return numbersArray || [];
-  }
+}
+
+function isPositionAdjacent(pos1, pos2) {
+    const [row1, col1] = pos1;
+    const [row2, col2] = pos2;
+    return (
+        Math.abs(row1 - row2) <= 1 && Math.abs(col1 - col2) <= 1
+    );
+}
+
 
 rl.on('close', () => {
     const grid = lines.map(line => line.split(''))
 
     const result = solve(grid)
 
-    const extract = extractNumbersFromString(result)
+    getConnectedNumber(result.numbers, result.symbols)
+
+    console.log(finalResult)
+
+    const outputArray = [...finalResult].map(i => i.number)
 
     let sum = 0
 
-    extract.forEach(number => {
-        sum += parseInt(number)
+    outputArray.forEach(num => {
+        sum += parseInt(num)
     });
 
     console.log(sum)
+
 });
